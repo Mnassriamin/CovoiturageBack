@@ -10,16 +10,18 @@ public class Reservation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(columnDefinition = "TINYINT(1)")
     private boolean confirme;
 
     @ManyToOne
     @JsonIgnore
-    @JoinColumn(name = "covoitureur_id", nullable = false)
-    private Covoitureur covoitureur;
-
-    @ManyToOne
     @JoinColumn(name = "trajet_id", nullable = false)
     private Trajet trajet;
+
+    @ManyToOne
+    @JoinColumn(name = "covoitureur_id", nullable = false)
+    private Covoitureur covoitureur;
 
     // Getters and Setters
     public Long getId() {

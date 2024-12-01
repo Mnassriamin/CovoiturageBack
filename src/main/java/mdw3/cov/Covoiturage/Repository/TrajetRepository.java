@@ -8,4 +8,5 @@ public interface TrajetRepository extends JpaRepository<Trajet, Long> {
     List<Trajet> findByConducteurId(Long conducteurId);
 
     List<Trajet> findByLieuDepartAndLieuArrivee(String lieuDepart, String lieuArrivee);
+
 }

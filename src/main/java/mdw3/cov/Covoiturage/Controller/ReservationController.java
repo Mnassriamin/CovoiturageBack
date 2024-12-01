@@ -63,25 +63,35 @@ public class ReservationController {
 
 
     @GetMapping("/{covoitureurId}")
-    public ResponseEntity<List<Reservation>> getReservationsByCovoitureur(@PathVariable Long covoitureurId) {
-        List<Reservation> reservations = reservationRepository.findByCovoitureurId(covoitureurId);
-        return ResponseEntity.ok(reservations);
+public ResponseEntity<List<Map<String, Object>>> getReservationsByCovoitureur(@PathVariable Long covoitureurId) {
+    List<Reservation> reservations = reservationRepository.findByCovoitureurId(covoitureurId);
+
+    List<Map<String, Object>> response = reservations.stream().map(reservation -> Map.of(
+        "trajet", Map.of(
+            "lieuDepart", reservation.getTrajet().getLieuDepart(),
+            "lieuArrivee", reservation.getTrajet().getLieuArrivee()
+        ),
+        "confirme", reservation.isConfirme(),
+        "reservationId", reservation.getId() // Ensure the ID is included
+    )).toList();
+
+    return ResponseEntity.ok(response);
+}
+    @PutMapping("/confirm/{reservationId}")
+public ResponseEntity<Map<String, String>> confirmReservation(@PathVariable Long reservationId) {
+    System.out.println("Received Reservation ID: " + reservationId); // Log the ID
+    Optional<Reservation> reservation = reservationRepository.findById(reservationId);
+
+    if (reservation.isEmpty()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", "Reservation not found"));
     }
 
-    @PutMapping("/confirm/{reservationId}")
-    public ResponseEntity<Map<String, String>> confirmReservation(@PathVariable Long reservationId) {
-        Optional<Reservation> reservation = reservationRepository.findById(reservationId);
-    
-        if (reservation.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", "Reservation not found"));
-        }
-    
-        Reservation updatedReservation = reservation.get();
-        updatedReservation.setConfirme(true);
-        reservationRepository.save(updatedReservation);
-    
-        return ResponseEntity.ok(Map.of("message", "Reservation confirmed successfully!"));
-    }
+    Reservation updatedReservation = reservation.get();
+    updatedReservation.setConfirme(true);
+    reservationRepository.save(updatedReservation);
+
+    return ResponseEntity.ok(Map.of("message", "Reservation confirmed successfully!"));
+}
 }
 

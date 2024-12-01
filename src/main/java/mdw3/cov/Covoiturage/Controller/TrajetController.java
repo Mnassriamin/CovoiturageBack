@@ -2,15 +2,19 @@ package mdw3.cov.Covoiturage.Controller;
 
 import mdw3.cov.Covoiturage.DTO.TrajetDetailsDTO;
 import mdw3.cov.Covoiturage.Entity.Conducteur;
+import mdw3.cov.Covoiturage.Entity.Reservation;
 import mdw3.cov.Covoiturage.Entity.Trajet;
 import mdw3.cov.Covoiturage.Repository.ConducteurRepository;
+import mdw3.cov.Covoiturage.Repository.ReservationRepository;
 import mdw3.cov.Covoiturage.Repository.TrajetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -23,6 +27,8 @@ public class TrajetController {
 
     @Autowired
     private ConducteurRepository conducteurRepository;
+    @Autowired
+    private ReservationRepository reservationRepository;
 
     @PostMapping("/with-conducteur")
     public ResponseEntity<Trajet> createTrajetWithConducteur(
@@ -98,6 +104,61 @@ public ResponseEntity<List<TrajetDetailsDTO>> getAllTrajets() {
         )).toList();
         return ResponseEntity.ok(trajetDTOs);
     }
+   
+    
+    @GetMapping("/{id}/details")
+    public ResponseEntity<?> getTrajetDetailsWithCovoitureurs(@PathVariable Long id) {
+        Optional<Trajet> trajetOpt = trajetRepository.findById(id);
+    
+        if (trajetOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Trajet not found");
+        }
+    
+        Trajet trajet = trajetOpt.get();
+        Conducteur conducteur = trajet.getConducteur();
+    
+        // Calculate available seats
+        int totalSeats = conducteur.getVehicule() != null ? conducteur.getVehicule().getSieges() : 0;
+        long confirmedReservations = reservationRepository.countByTrajetAndConfirme(trajet, true);
+    
+        // Debug logs
+        System.out.println("Total Seats: " + totalSeats);
+        System.out.println("Confirmed Reservations: " + confirmedReservations);
+    
+        int seatsAvailable = Math.max(0, totalSeats - (int) confirmedReservations);
+    
+        // Debug available seats
+        System.out.println("Seats Available: " + seatsAvailable);
+    
+        // Fetch reservations and map data
+        List<Map<String, Object>> reservations = reservationRepository.findByTrajet(trajet).stream().map(reservation -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", reservation.getId());
+            map.put("confirme", reservation.isConfirme());
+            map.put("covoitureur", Map.of(
+                "nom", reservation.getCovoitureur().getNom(),
+                "prenom", reservation.getCovoitureur().getPrenom(),
+                "email", reservation.getCovoitureur().getEmail(),
+                "telephone", reservation.getCovoitureur().getTelephone()
+            ));
+            return map;
+        }).toList();
+    
+        // Build response
+        Map<String, Object> response = new HashMap<>();
+        response.put("trajet", trajet);
+        response.put("reservations", reservations);
+        response.put("seatsAvailable", seatsAvailable);
+    
+        return ResponseEntity.ok(response);
+    }
+    
+
+
+    
+
+    
+
 
     @PutMapping("/{id}")
     public ResponseEntity<Trajet> updateTrajet(@PathVariable Long id, @RequestBody Trajet updatedTrajet) {

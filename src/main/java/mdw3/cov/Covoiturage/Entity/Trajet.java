@@ -12,6 +12,7 @@ public class Trajet {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String lieuDepart;
     private String lieuArrivee;
     private LocalDateTime dateHeure;
@@ -22,7 +23,6 @@ public class Trajet {
     private Conducteur conducteur;
 
     @OneToMany(mappedBy = "trajet", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
     private List<Reservation> reservations;
 
     // Getters and Setters
